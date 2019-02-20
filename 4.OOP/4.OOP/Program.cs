@@ -81,6 +81,7 @@ namespace _4.OOP
     //    // sealed 예약어를 사용한 클래스는 상속을 의도적으로 막는다.
     //}
 
+
     class Program
     {
         static void Main(string[] args)
@@ -115,7 +116,20 @@ namespace _4.OOP
             double piValue = o.Pi; //읽기
             Console.WriteLine(piValue);
 
+            Type type = o.GetType();
+
+            Console.WriteLine(type.FullName);
+            Console.WriteLine(type.IsClass);
+            Console.WriteLine(type.IsArray);
+            Console.WriteLine(o.GetType().FullName);
+
+            Type type2 = typeof(double);
+
+            Console.WriteLine(type2.FullName);
+            Console.WriteLine(typeof(Circle).FullName);
+
+
         }
-    }
+    } 
 
 }
