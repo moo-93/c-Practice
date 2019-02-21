@@ -22,9 +22,86 @@ namespace _4.OOP_2
             this.sibn13 = sibn13;
             this.author = author;
         }
-
-
     }
+
+    class Mammal
+    {
+        public void Move()
+        {
+            Console.WriteLine("이동한다.");
+        }
+    }
+    
+    class Lion : Mammal
+    {
+        public void Move()
+        {
+            Console.WriteLine("네발로 이동한다.");
+        }
+    }
+
+    class Whale : Mammal
+    {
+        new public void Move()
+        {
+            Console.WriteLine("수영한다");
+        }
+    }
+
+    class Human : Mammal
+    {
+        public void Move()
+        {
+            Console.WriteLine("두발로 이동한다.");
+        }
+    }
+
+    public class Currency
+    {
+        decimal money;
+        public decimal Money { get { return money; } }
+
+        public Currency(decimal money)
+        {
+            this.money = money;
+        }
+    }
+
+    public class Won : Currency
+    {
+        public Won(decimal money) : base(money){ }
+
+        public override string ToString()
+        {
+            return Money + "원";
+        }
+    }
+
+    public class Yen : Currency
+    {
+        public Yen(decimal money) : base(money) { }
+
+        public override string ToString()
+        {
+            return Money + "엔";
+        }
+
+        static public implicit operator Won(Yen yen)
+        {
+            return new Won(yen.Money * 10m);
+        }
+    }
+
+    public class Dollar : Currency
+    {
+        public Dollar(decimal money) : base(money) { }
+
+        public override string ToString()
+        {
+            return Money + "달러";
+        }
+    }
+
     class Program
     {
         private static void OutputArrayInfo(Array arr)
@@ -64,6 +141,29 @@ namespace _4.OOP_2
 
             Book book = new Book("test");
 
+            Lion lion = new Lion();
+            lion.Move();
+            Mammal one = lion;
+            one.Move();
+
+            Whale whale = new Whale();
+            whale.Move();
+
+            Human human = new Human();
+            human.Move();
+
+            Console.WriteLine();
+
+            Won won = new Won(1000);
+            Dollar dollar = new Dollar(1);
+            Yen yen = new Yen(13);
+
+            Console.WriteLine(won.ToString());
+            Console.WriteLine(dollar.ToString());
+            Console.WriteLine(yen.ToString());
+
+            Won won2 = yen;
+            Console.WriteLine(won2);
         }
     }
 }
