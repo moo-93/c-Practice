@@ -505,3 +505,122 @@ mon.TurnOn(); // 반드시 해당 인터페이스로 형변환해서 호출
 ``` 
 - 인터페이스에 get/set 프로퍼티도 선언이 가능하다.
 - c#에서는 인터페이스 자체는 객체 생성이 불가능하나 인터페이스 배열은 가능하다...
+
+#### IEnumerable 인터페이스
+
+- foreach 문법을 좀 더 넓게 사용하기 위해 IEnumerable 인터페이스를 확인해보자
+- IEnumerable은 닷넷 프레임워크 내부에서 제공된다.
+```
+public interface IEnumerable{
+    IEnumerator GetEnumerator();
+}
+```
+- 여기서 GetEnumerator()는 IEnumerator를 반환하게 된다.
+- IEnumerator 인터페이스 역시 닷넷 프레임워크 내부에서 제공된다.
+```
+public interface IEnumerator{
+    object Current {get;} // 현재 요소를 반환
+    bool MoveNext(); // 다음 순서의 요소로 넘어가도록
+    void Reset(); // 열거 순서를 처음으로 되돌릴 때
+}
+```
+- 즉 IEnumerator 인터페이스를 이용하여 foreach 구문을 돌리게 된다.
+- foreach 구문은 기본 타입 또는 string타입이 지원되나 커스텀 타입(클래스)를 이용하기 위해서는 오버라이딩을 해야한다.
+```
+class Hardware{}
+class USB{
+    string name;
+    public USB(string name){this.name = name;}
+
+    public override string ToString(){
+        return name;
+    }
+}
+
+class NoteBook : Hardware, IEnumerable{
+    USB[] usbList = new USB[] {new USB("USB1"), new USB("USB2")};
+
+    public IEnumerator GetEnumerator(){
+        return new USBEnumerator(usbList);
+    }
+
+    public class USBEnumerator : IEnumerator{
+        int pos = -1; // 왜 0부터가 아닌 -1 부터냐면 MoveNext() 메서드를 먼저 진행함으로써 pos++ 되어 0으로 진행
+        int length = 0; // 그 후에 Current 인스턴스를 실행함으로써 list[0]부터 반환!
+        object[] list;
+
+        public USBEnumerator(USB[] usb){
+            list = usb;
+            length = usb.Length;
+        }
+
+        pulbic object Current // 현재 요소를 반환
+        {
+            get {return list[pos];}
+        }
+
+        public bool MoveNext() // 다음 순서의 요소를 지정
+        {
+            if( pos >= length - 1){
+                return false;
+            }
+
+            pos++;
+            return true;
+        }
+
+        public void Reset() // 처음부터 열거하고 싶을 때 호출
+        {
+            pos = -1;
+        }
+    }
+}
+```
+- 이로써 foreach문이 사용이 가능해진다.
+```
+Notebook notebook = new Notebook();
+foreach(USB usb in notebook){
+    Console.WriteLine(usb);
+}
+```
+
+### 구조체
+- 클래스가 참조형 타입이라면 구조체는 값 형식이다. 클래스와 유사한 방식이 있으나 클래스보단 제한적이다.
+- 클래스와 차이점을 설명해보자면
+```
+1. 인스턴스 생성할때(객체를 생성할때) new로 해도되고 안해도 된다.
+2. 기본 생성자는 명시적으로 정의 불가능
+3. 매개변수를 갖는 생성자를 정의해도 기본생성자가 c# 컴파일러에 의해 자동으로 포함(클래스는 x)
+4. 매개변수를 받는 생성자의 경우, 반드시 해당 코드 내에서 구조체의 모든 필드에 값을 할당해야 한다.
+5. 구조체는 상속이 불가능(System.Object를 상속하는 System.ValueType에서 직접 상속)
+```
+```
+struct Vector
+{
+    public int x;
+    public int y;
+
+    public Vector(int x, int y)
+    {
+        this.x = x;
+        this.y = y;
+    }
+
+    public override string ToString()
+    {
+        return "x: " + x + " Y: " + y ;
+    }
+}
+```
+```
+Vector v1 = new Vector(); // new를 사용해 인스턴스 생성 가능
+Vector v2; // 사용안해도 가능
+v2.x = 0;
+v2.y = 0;
+
+Vector v3 = new Vector(5, 10); // 명시적 생성자를 이용하여 생성 가능
+```
+- v1, v2, v3 모두 결과가 같다.
+- 결론적으로 구조체는 값 자체를 스택에 저장(깊은 복사)<br>
+  클래스는 주소값을 스택에 저장한 후 힙 메모리에 값을 불러오는 형식(얕은 복사)
+- 따라서 클래스/구조체 정의는 개발자의 몫이라고 적혀는 있는데... 뭐 그렇답니다..
