@@ -624,3 +624,350 @@ Vector v3 = new Vector(5, 10); // 명시적 생성자를 이용하여 생성 가
 - 결론적으로 구조체는 값 자체를 스택에 저장(깊은 복사)<br>
   클래스는 주소값을 스택에 저장한 후 힙 메모리에 값을 불러오는 형식(얕은 복사)
 - 따라서 클래스/구조체 정의는 개발자의 몫이라고 적혀는 있는데... 뭐 그렇답니다..
+
+
+#### ref, out
+- c#에서는 call by reference(참조에 의한 호출)을 위한 예약어 ref, out을 지원한다.
+- ref, out 예약어는 얕은 복사를 진행한다는 점을 기억하자.
+- 사용법은 호출할 메서드 매개변수 앞에 예약어를 작성한다.(메서드 선언부에도 똑같이 적용)
+
+- out 예약어는 ref에 비해 제한적, 즉 몇가지 기능을 강제로 제한한다.
+    - out으로 지정된 인자에 넘길 변수는 초기화되지 않아도 된다.<br>
+     초기화가 되어있더라도 out 인자를 받는 메서드에서는 그 값을 사용 할 수 없다.
+    - out으로 지정된 인자를 받는 메서드는 반드시 벼누에 값을 넣어서 반환해야 한다.
+```
+bool Divide(int n1, int n2, out int result){
+    if(n2 == 0){
+        result = 0; // return 하기 전 반드시 초기화 해야함!
+        return false;
+    }
+
+    result = n1 / n2;
+    return true;
+}
+
+int quotient;
+if(Divide(15, 3, out quotient) == true){ // out 인자를 넣을때 초기화를 안해도 되며 하더라도 초기화가 안된 인자가 들어감!
+    Console.WriteLine(quotient);
+}
+```
+
+- 이와 비슷한 용도로 닷넷 프레임워크에서는 TryParse 메서드를 제공한다.
+```
+public static bool TryParse(string s, out int result);
+```
+
+```
+int n; // int형으로 형 변환이 가능한지 체크해주는 유용한 기능이며 즉시 형변환도 가능!
+if(int.TryParse("1234567",out n) == true){
+    Console.WriteLine(n);
+}
+```
+
+### enum
+```
+enum Days{
+    Sunday, Monday, Tuesday, Wednesday, Thrusay, Friday, Saturday
+}
+
+Days workingDays = Days.Monday | Days.Tuesday | Days.Wednesday | Days.Thrusay | Days.Friday | Days.Saturday | days.Sunday;
+
+Console.WriteLine(workingDays.HasFlag(Days.Sunday)); // 해당 Flag가 포함되어 있는가?
+Console.WriteLine(workingDays); // 해당 값의 합이 결과값
+```
+- 여기서 woringDays의 값을 0+1+2+3+4+5+6 = 21이 나온다.
+- 하지만 개별 정수가 의미가 있는 특성을 묶은 enum의 특성상 출력값이 Sunday...로 나오게 하고 싶다면?
+
+```
+[Flags] // flags 특성을 붙이자 (c#은 다양한 종류가 지원이 된다...)
+enum Days{
+    Sunday, Monday, Tuesday, Wednesday, Thrusay, Friday, Saturday
+}
+```
+
+### 멤버 유형 확장
+- 클래스에서 기본적으로 제공되는 멤버 유형은 필드와 메서드
+- 프로퍼티는 메서드의 변형이며, 델리게이트는 중첩 클래스의 변형
+
+#### readonly
+- 말 그대로 읽기만 가능하게 설정하는 예약어
+- 클래스에 필드를 선언할때 앞에 붙여준다. 이 기능은 클래스 내부에서도 읽기만 가능하다.
+
+#### const
+- 말 그대로 상수! 앞에 const를 사용하면 그 필드 값은 상수가 된다.
+- static을 붙일 수 없으나 static 인스턴스와 비슷하다고 생각하자.
+
+#### evnet
+- '간편 표기법' 중 하나로 다음 조건을 만족하는 정형화된 콜백 패턴을 구현하려고 할 때 이 예약어를 사용
+
+```
+1. 클래스에서 이벤트(콜백)를 제공한다.
+2. 외부에서 자유롭게 해당 이벤트(콜백)를 구독하거나 해지하는 것이 가능
+3. 외부에서 구독/해지는 가능하나 이벤트 발생은 오직 내부에서만 가능
+4. 이벤트(콜백)의 첫 번째 인자로는 이벤트를 발생시킨 타입의 인스턴스
+5. 이벤트(콜백)의 두 번째 인자로는 해당 이벤트렝 속한 의미 있는 값이 제공된다.
+```
+
+- 콜백을 구현하기 위한 소수 생성기를 구현해보자
+```
+namespace _4.OOP_4
+{
+
+    class CallbackArg { } // 콜백의 값을 담는 클래스의 최상위 부모 클래스 역할
+
+    class PrimeCallbackArg : CallbackArg // 콜백 값을 담는 클래스 정의
+    {
+        public int Prime;
+
+        public PrimeCallbackArg(int Prime)
+        {
+            this.Prime = Prime;
+        }
+    }
+
+    // 소수 생성기: 소수가 발생할 때마다 등록된 콜백 메서드 호출
+    class PrimeGenerator
+    {
+        // 콜백을 위한 델리게이트 타입 저의
+        public delegate void PrimeDelegate(object sender, CallbackArg arg);
+
+        // 콜백 메서드를 보관하는 델리게이트 인스턴스 필드
+        PrimeDelegate callbacks;
+
+
+        // 콜백 메서드 추가
+        public void AddDelegate(PrimeDelegate callback)
+        {
+            callbacks = Delegate.Combine(callbacks, callback) as PrimeDelegate;
+        }
+
+        // 콜백 메서드 삭제
+        public void RemoveDelegate(PrimeDelegate callback)
+        {
+            callbacks = Delegate.Remove(callbacks, callback) as PrimeDelegate;
+        }
+
+        // 소수 발견되면 콜백 메서드 호출
+        public void Run(int limit)
+        {
+            for (int i = 2; i <= limit; i++)
+            {
+                if (IsPrime(i) == true && callbacks != null)
+                {
+                    // 콜백을 발생시킨 측의 인스턴스와 발견된 소수를 콜백 메서드에 전달
+                    callbacks(this, new PrimeCallbackArg(i));
+                }
+            }
+        }
+
+        // 소수 판정 메서드
+        private bool IsPrime(int candidate)
+        {
+            if ((candidate & 1) == 0)
+            {
+                return candidate == 2;
+            }
+
+            for (int i = 3; (i * i) <= candidate; i++)
+            {
+                if ((candidate % i) == 0) return false;
+            }
+
+            return candidate != 1;
+        }
+    }
+
+    class Program
+    {
+        // 콜백으로 등록될 메서드 1
+        static void PrintPrime(object sender, CallbackArg arg)
+        {
+            Console.Write((arg as PrimeCallbackArg).Prime + ", ");
+        }
+
+        static int Sum;
+
+        // 콜백으로 등록될 메서드 2
+        static void SumPrime(object sender, CallbackArg arg)
+        {
+            Sum += (arg as PrimeCallbackArg).Prime;
+        }
+        static void Main(string[] args)
+        {
+            PrimeGenerator gen = new PrimeGenerator();
+
+            // 콜백으로 등록될 메서드 1 추가
+            PrimeGenerator.PrimeDelegate callprint = PrintPrime;
+            gen.AddDelegate(callprint);
+
+            // 콜백으로 등록될 메서드 2 추가
+            PrimeGenerator.PrimeDelegate callsum = SumPrime;
+            gen.AddDelegate(callsum);
+
+            gen.Run(10);
+            Console.WriteLine();
+            Console.WriteLine(Sum);
+
+            gen.RemoveDelegate(callsum);
+            gen.Run(15);
+        }
+    }
+}
+```
+
+- 이제 evnet를 사용해 예제를 간결하게 만들어 보자.
+- PrimeCallbackArg 타입이 상속받는 CallbackArg 타입이 필요없다.<br>
+  이미 System.EventArgs라는 타입이 닷넷 프레임워크에 제공되어 있다.
+
+```
+    class PrimeCallbackArg : EventArgs // 콜백 값을 담는 클래스 정의
+    {
+        public int Prime;
+
+        public PrimeCallbackArg(int Prime)
+        {
+            this.Prime = Prime;
+        }
+    }
+```
+- 따라서 콜백 메서드에 전달되는 인자를 EventArg로 변경하자.
+```
+    // 콜백으로 등록될 메서드 1
+    static void PrintPrime(object sender, EventArgs arg)
+    {
+        Console.Write((arg as PrimeCallbackArg).Prime + ", ");
+    }
+
+    static int Sum;
+
+    // 콜백으로 등록될 메서드 2
+    static void SumPrime(object sender, EventArgs arg)
+    {
+        Sum += (arg as PrimeCallbackArg).Prime;
+    }
+```
+- 다음으로 event 예약어의 위력이 발휘될 차례다. PRimeGenerator 타입에 구현되어 있는 PRimeDelegate, <br>
+  AddDelegate, RemoveDelegate 멤버를 제거하고 다음의 한 줄로 정의하면 된다.
+```
+public event EventHandler PrimeGenerated; // event!
+```
+- callbacks 인자의 이름이 이벤트의 PrimeGenerated로 바뀌었으므로 Run 메서드의 코드도 변경하자.
+```
+    public void Run(int limit)
+    {
+        for (int i = 2; i <= limit; i++)
+        {
+            if (IsPrime(i) == true && PrimeGenerated != null)
+            {
+                // 콜백을 발생시킨 측의 인스턴스와 발견된 소수를 콜백 메서드에 전달
+                PrimeGenerated(this, new PrimeCallbackArg(i));
+            }
+        }
+    }
+```
+- 여기까지가 PrimeGenerator에서 이벤트를 제공하기 위한 코드의 전부이다.
+- 이렇게 제공되는 이벤트를 사용하는 측은 이전보다 더욱 간결하게 이벤트 구독/해지를 할 수 있다.
+```
+    static void Main(string[] args)
+    {
+        PrimeGenerator gen = new PrimeGenerator();
+
+        gen.PrimeGenerated += PrintPrime;
+        gen.PrimeGenerated += SumPrime;
+
+        gen.Run(10);
+        Console.WriteLine();
+        Console.WriteLine(Sum);
+
+        gen.PrimeGenerated -= SumPrime;
+        gen.Run(15);
+    }
+```
+
+#### Indexer
+```
+int[] intArray = new int[5];
+intArray[0] = 6;
+```
+- 배열의 0번째 요소에 접근할 때 대괄호 연산자를 사용한다.
+- 하지만 배열이 아닌 일반 클래스에서 이런 구문을 사용하기위해 인덱서라고 하는 특별한 구문을 제공한다.
+
+```
+class 클래스명
+{
+    접근제한자 반환타입 this[인덱스타입 인덱스명]{
+        접근제한자 get{
+            ...
+            return 말하지 않아도 알겠...;
+        }
+        접근제한자 set{
+            ...
+        }
+    }
+}
+인덱서를 이용하면 클래스의 인스턴스 변수에 배열처럼 접근하는 방식의 대괄호 연산자를 사용할 수 있다.
+프로퍼티를 정의하는 구문과 유사하며, 단지 프로퍼티명이 this 예약어로 대체된다는 점과 인덱스로 별도의 타입을 지정할 수 있다는 점이 다르다.
+```
+
+- 다음은 Int32 정수형 데이터의 특정 자릿수를 인덱서를 사용해 문자(char) 데이터로 다룰 수 있는 예제다.
+```
+namespace _4.OOP_5
+{
+    class IntegerText
+    {
+        char[] txtNumber;
+
+        public IntegerText(int number)
+        {
+            // Int32 타입을 System.String으로 변환하고 다시 String에서 char 배열로 변환
+            this.txtNumber = number.ToString().ToCharArray();
+        }
+
+        // 인덱서를 이용해 숫자의 자릿수에 따른 문자를 반환하거나 치환
+        public char this[int index]
+        {
+            get
+            {
+                // 1의 자릿수는 숫자에서 가장 마지막 단어를 뜻하므로 역으로 인덱스를 다시 계산
+                return txtNumber[txtNumber.Length - index - 1];
+            }
+            set
+            {
+                // 특정 자릿수를 숫자에 해당하는 문자로 치환 가능
+                txtNumber[txtNumber.Length - index - 1] = value;
+            }
+        }
+
+        public override string ToString()
+        {
+            return new string(txtNumber);
+        }
+
+        public int ToInt32()
+        {
+            return Int32.Parse(ToString());
+        }
+    }
+
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            IntegerText aInt = new IntegerText(123456);
+
+            int step = 1;
+            for (int i = 0; i < aInt.ToString().Length; i++)
+            {
+                Console.WriteLine(step + "의 자릿수: " + aInt[i]);
+                step *= 10;
+
+                aInt[3] = '5';
+            }
+            Console.WriteLine(aInt.ToInt32());
+        }
+    }
+}
+```
+- 인덱서를 통해 클래스가 직관적으로 배열처럼 다뤄질 수 있을 때 편리하게 사용할 수 있다는 것을 확인했다.
+- 하지만 클래스가 배열처럼 다뤄질 수 있다는 사실을 직관적으로 받아들이지 않는다.
+- 그래서 다소 사용빈도가 낮은 편이라고 한다. 즉 직관적이지 않으면 사용을 굳이 할 필요는 없다는 설명인듯 ...
