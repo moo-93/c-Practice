@@ -1204,3 +1204,61 @@ static void OutputText(){
 #### thorw; vs throw ex; 차이점
 - thorw ex;만 하면 해당 ex코드가 발생한 지점부터 호출스택이 남는다. 즉 그 지점만 오류내용이 호출
 - throw; 는 예외를 발생시킨 모든 호출 스택이 출력
+------------------------
+## BCL(Base Class Library)
+- 사실 이부분은 doucumentation을 찾아보면 된다. 역시 새로 알게된 내용만을 기록할 예정
+
+### System.Text.Encoding
+
+정적 속성 | 설명
+|---------|----|
+ASCII | 7비트 ASCII 문자셋을 위한 인코딩
+Default | 시스템 기본 문자셋을 위한 인코딩
+Unicode | 유니코드 문자셋의 UTF-16 인코딩
+UTF32 | 유니코드 문자셋의 UTF-32 인코딩
+UTF8 | 유니코드 문자셋의 UTF-8 인코딩
+
+```
+string textData = "Hello World";
+
+byte[] buf = Encoding.UTF8.GetBytes(textData);
+```
+- 효율상의 이유로 UTF-8을 많이 씀!
+
+### System.Text.RegularExpressions.Regex
+- 정규 표현식과 관련된 라이브러리
+
+```
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            string email = "tester@test.com";
+            Console.WriteLine(IsEmail(email));
+        }
+
+        static bool IsEmail(string email)
+        {
+            Regex regex =
+                new Regex(@"^([0-9a-zA-z]+)@([0-9a-zA-Z]+)(\.[0-9a-zA-Z]+){1,}$"); // 정규표현식
+            return regex.IsMatch(email);
+        }
+    }
+```
+- 이메일을 정규 표현식을 통해 걸러내는 소스코드이다. 조건은 다음과 같다.
+    - 반드시 '@' 문자를 한번 포함
+    - @ 문자 이전의 문자열에는 문자와 숫자만 허용(특수문자 포함 x)
+    - @ 문자 이후의 문자열에는 문자와 숫자만 허용되며 반드시 하나 이상의 점을 포함한다.
+
+- https://www.slideshare.net/ibare/ss-39274621?qid=6002aaf2-58d9-4720-81d0-5f0240b6c332&v=&b=&from_search=1 (정규표현식)
+```
+^([0-9a-zA-z]+)@([0-9a-zA-Z]+)(\.[0-9a-zA-Z]+){1,}$
+
+^ : 문장의 시작이 다음 규칙을 만족해야함
+([0-9a-zA-z]+) : 영숫자 1개 이상
+@ : 반드시 '@' 문자가 있음
+([0-9a-zA-Z]+) : 영숫자 1개 이상
+(\.[0-9a-zA-Z]+) : 점(.)과 1개 이상의 영숫자
+{1,} : 이전의 규칙이 1번 이상 반복(즉, 점과 1개 이상의 영숫자가 반복) <<= 지워야 .com.com false 처리됨
+$: 이전의 규칙을 만족하면서 끝남(즉, 점과 1개 이상의 영숫자가 1번 이상 반복되면서 끝남)
+```
