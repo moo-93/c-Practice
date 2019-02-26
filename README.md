@@ -971,3 +971,236 @@ namespace _4.OOP_5
 - 인덱서를 통해 클래스가 직관적으로 배열처럼 다뤄질 수 있을 때 편리하게 사용할 수 있다는 것을 확인했다.
 - 하지만 클래스가 배열처럼 다뤄질 수 있다는 사실을 직관적으로 받아들이지 않는다.
 - 그래서 다소 사용빈도가 낮은 편이라고 한다. 즉 직관적이지 않으면 사용을 굳이 할 필요는 없다는 설명인듯 ...
+-----------------------------------
+## c# 1.0
+- 앞에 내용도 c# 1.0 또는 2.0의 일부를 기록하긴 했으나 이번 파트에선 좀 더 세부적인 내용을 기록할 예정이다.
+
+### 특성
+- 간단하게 java의 annotation과 비슷한 느낌을 받는다.
+
+#### 사용자 정의 특성
+```
+class AuthorAttribute : System.Attribute{ // 반드시 Attribute를 상속
+
+}
+```
+```
+[AuthorAttribute] // 보통 접미사에 Attribute를 붙인다고 한다.
+class Dummy1 {}
+
+[Author] // c#에서는 접미사를 생략해도 된다.
+class Dummy2 {}
+
+[Author()] // 생성자를 표현하는 구문도 있다.
+class Dummy3 {}
+```
+- 특성 클래스에 매개변수가 포함된 생성자를 추가할 수도 있다.
+```
+class AuthorAttribute : System.Attribute{
+    string name;
+    int _version;
+
+    public AuthorAttribute(string name){
+        this.name = name;
+    }
+
+    public int Version{
+        get{return _version;}
+        set{_version = value;}
+    }
+}
+
+[Author("Anders", Version = 1)] // Version 속성이 생성자에 명시되어 있지 않으므로 "이름 = 값" 형식으로 전달
+class Program{
+    static void Main(string[] args){}
+}
+```
+
+#### 특성이 적용될 대상을 제한
+
+- 닷넷에서는 특성의 용도를 제한할 목적으로 System.AttributeUsageAttribute라는 또다른 특성을 제공한다.
+- AttributeTargets에 정의된 값을 보면 특성을 적용될 수 있는 대상을 확인할 수 있다.
+
+AttributeTargets 값 | 의미
+|-------------------|---|
+Assembly | 어셈블리가 대상
+Module | 모듈이 대상
+Class | 클래스가 대상
+Struct | 구조체가 대상
+Enum | 열거형 대상
+Constructor | 생성자 대상
+Method | 메서드 대상
+Property | 프로퍼티 대상
+Field | 필드 대상
+Event | 이벤트 대상
+Interface | 인터페이스 대상
+Parameter | 매서드의 매개변수 대상
+Delegate | 대리자 대상
+ReturnValue | 메서드의 반환값 대상
+GenericParameter | c# 2.0에 추가된 제네릭 매개변수 대상
+All | AttributeTargets에 정의된 모든 대상
+
+- 앞에서 만든 Author 특성은 전부 적용된다. 만약 메서드와 클래스에만 적용하고 싶다면
+```
+[AtributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+class AuthorAttribute : System.Attribute
+...생략...
+```
+- 특성을 사용하는 대괄호 구문에는 특성이 적용될 대상을 명시하는 것이 가능하다.
+```
+[type: Author("Tester")]
+class Program{
+    [method: Author("Tester")]
+    static void Main(string[] args){}
+}
+```
+AttributeTargets 값 | [target: ....]
+|-------------------|---|
+Assembly | assembly
+Module | module
+Class | type
+Struct | type
+Enum | type
+Constructor | method
+Method | method
+Property | property
+Field | field
+Event | envent
+Interface | type
+Parameter | param
+Delegate | type
+ReturnValue | return
+GenericParameter | typevar
+
+- AttrivuteUsage 특성에는 생성자로 입력받는 AttributeTargets 말고 두가지 속성이 더 제공된다.
+
+속성 타입 | 속성 이름 | 의미
+---------|-----------|----
+bool|AllowMutiple|대상에 동일한 특성이 다중으로 정의 가능(기본 false)
+bool|Inherited| 특성이 지정된 대상을 상속받는 타입도 자동으로 부모의 특성을 물려받음(기본 false며 잘 안쓰임)
+
+```
+[Author("Anders", Version = 1)]
+[Author("Brad", Version = 2)] // 다음과 같이 다중지정 시 "특성이 중복되었습니다." 라는 컴파일 오류 발생
+class Program{}
+```
+- 따라서 AttributeUsage 설정 시 AllowMiltiple 속성을 true로 지정해야 한다.
+```
+[AtributeUsage(AttributeTargets.All, AllowMultiple = true)]
+Class AuthorAttribute : System.Attribute
+... 생략 ...
+```
+- 만약 AllowMultiple에 상관없이 여러개의 특성을 지정하는것은 가능하다.
+```
+[Flags]
+[Author("Anders")]
+enum Days{...생략...}
+
+[Flags, Author("Anders")] // 이런식의 정의도 가능
+```
+
+### 예약어
+
+#### 연산 범위 확인: checked, unchecked
+
+- 오버플로우, 언더플로우가 발생하였을때 사용하는 예약어
+```
+short c = 32767;
+
+checked {
+    c++; // OverflowException 발생
+}
+
+unchecked {
+    c++; // 컴파일러에 /checked 옵션을 적용해 컴파일된 경우에도 오류가 발생하지 않는다.
+}
+```
+
+#### 가변 매개변수: param
+
+- 메서드를 정의할 때 며개의 인자를 받아야 할지 정할 수 없을 경우 사용
+```
+static int Add(params int[] values){
+    int result = 0;
+
+    for(int i = 0; i < values.Length; i++){
+        result += values[i];
+    }
+    return result;
+}
+```
+
+### 응용 프로그램 구성 파일 : app.config
+
+#### supportedRuntime
+
+- 닷넷 프레임워크를 지원하기 위한 태그 속성
+```
+<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+    <startup> 
+        <supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.7" />
+        <supportedRuntime version="v2.0.50727"/> // 다중지원하려면 이런식으로 추가로 작성하자
+    </startup>
+</configuration>
+```
+
+#### appSettings
+- supportedRuntime은 CLR의 초기화에 관여하므로 app.config에 지정할 수밖에 없는 경우였다.
+- 반면 appSettings는 CLR보다는 그 위에서 실행되는 응용 프로그램에 값을 전달하는 목적으로 사용한다.
+```
+<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+    <appSettings>
+        <add key="adminEmailAddress value="admin@sysnet.pe.kr"/>
+        <add key="Delay" value="5000"/>
+    </appSettings>
+</configuration>
+```
+- key에는 설정값을 구분할 수 있는 이름, value는 key로 식별되는 값을 준다.
+- app.config에 지정한 값을 c# 코드에서 읽어들여 활용할 수 있다.
+```
+namespace _5.c__1._0
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            string txt = ConfigurationSettings.AppSettings["AdminEmailAddress"];
+            Console.WriteLine(txt); // admin@sysnet.pe.kr
+
+            txt = ConfigurationSettings.AppSettings["Delay"];
+            int delay = int.Parse(txt);
+            Console.WriteLine(delay); // 5000
+        }
+    }
+}
+```
+- ConfigurationSettings 타입은 System.configuration 네임스페이스로 System.dll에 정의된 타입이다.
+- appSettings에 지저된 값을 가져올 수 있는 AppSettings 정적 멤버가 제공된다.
+- appSettings는 소스코드를 재컴파일하지 않고도 프로그램의 일부 동작을 사용자로 하여금 변경할 수 있는 장점이 있다.<br>
+  예를 들어 이메일을 변경할때 app.config에서 value를 변경하면 끝!
+
+### DEBUG, TRACE 전처리 상수
+- 디버그 빌드와 릴리스 빌드를 할 때 VS에서는 자동으로 관리되는 전처리 상수가 있다.
+- 릴리스 빌드일때 TRACE만 지정, 디버그 빌드일때 DEBUG, TRACE 둘다 지정
+- 이런 차이를 이용하여 디버그 빌드일때만 사용하는 소스코드를 지정 할 수 있다.
+
+#### Conditional
+- 전처리 상수를 이용하여 기존 #if, #endif를 이용하여 디버그 빌드일때만 사용하는 소스코드를 지정할 수 있다.
+- 하지만 Conditional 특성을 이용하면 좀 더 간단해진다.
+```
+static void Main(string[] args){
+    OutputText();
+}
+
+[Conditional("DEBUG")]
+static void OutputText(){
+    Console.WriteLine("디버그 빌드");
+}
+``` 
+### 예외처리
+
+#### thorw; vs throw ex; 차이점
+- thorw ex;만 하면 해당 ex코드가 발생한 지점부터 호출스택이 남는다. 즉 그 지점만 오류내용이 호출
+- throw; 는 예외를 발생시킨 모든 호출 스택이 출력
